@@ -1,0 +1,25 @@
+﻿################################################################################
+# 🐉 Tom 构建项目
+################################################################################
+
+# Build and Release Folders
+bin-debug/
+bin-release/
+[Oo]bj/
+[Bb]in/
+
+# Other files and folders
+*.csproj.user
+
+# Executables
+*.swf
+*.air
+*.ipa
+*.apk
+*.vcxproj.filters
+*.vcxproj.user
+*.pubxml.user
+
+/.vs
+/packages
+/fq/fq.txt
