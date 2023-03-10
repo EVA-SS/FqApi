@@ -152,6 +152,10 @@ namespace fq
                 return "🇹🇭";
             else if (key.Contains("越南"))
                 return "🇻🇳";
+            else if (key.Contains("欧盟"))
+                return "🇪🇺";
+            else if (key.Contains("摩尔多瓦"))
+                return "🇲🇩";
             return null;
         }
 
@@ -177,9 +181,9 @@ namespace fq
                 server = data.add;
                 port = data.port;
                 cipher = "auto";
-                if (!string.IsNullOrEmpty(data.host) && !string.IsNullOrEmpty(data.path)) ws_opts = new WsOpts(data);
-
+                if (data.net == "ws") ws_opts = new WsOpts(data);
                 if (data.tls == "tls") tls = true;
+                else tls = false;
 
                 if (!string.IsNullOrEmpty(data.sni)) servername = data.sni;
 
@@ -262,7 +266,7 @@ namespace fq
                 if (alterId != null) arr.Add("alterId: " + alterId);
                 if (cipher != null) arr.Add("cipher: " + cipher);
                 if (password != null) arr.Add("password: " + password);
-                if (tls.HasValue && tls.Value) arr.Add("tls: true");
+                if (tls.HasValue) arr.Add("tls: " + (tls.Value ? "true" : "false"));
 
                 if (servername != null) arr.Add("servername: " + servername);
                 if (network != null) arr.Add("network: " + network);
@@ -275,9 +279,11 @@ namespace fq
         {
             public WsOpts(Vmess data)
             {
-                if (data.path == "/speedtest" || data.path == "/vmess") path = "/";
-                else path = data.path;
-                headers_Host = data.host;
+                headers_Host = data.add;
+                path = "/";
+                if (!string.IsNullOrEmpty(data.host)) headers_Host = data.host;
+                if (!string.IsNullOrEmpty(data.path) && (data.path != "/speedtest" && data.path != "/nguevws" && data.path != "/vmess"))
+                    path = data.path;
             }
             public WsOpts() { }
             public string path { get; set; }
@@ -285,6 +291,7 @@ namespace fq
 
             public override string ToString()
             {
+                if (path.Contains("?") || path.Contains("=")) return "{path: \"" + path + "\", headers: {Host: " + headers_Host + "}}";
                 return "{path: " + path + ", headers: {Host: " + headers_Host + "}}";
             }
         }

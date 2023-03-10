@@ -6,6 +6,7 @@
 
 ## 🪟下载
 - [Clash Windows](https://github.com/Fndroid/clash_for_windows_pkg/releases)
+- [Clash Android](https://github.com/Kr328/ClashForAndroid/releases)
 - [v2ray Windows](https://github.com/2dust/v2rayN)
 
 ## ☕使用
@@ -14,6 +15,8 @@
 ![Clash Windows](screenshot/Clash2.png?raw=true)
 ### Clash 启动代理
 ![Clash Windows 打开](screenshot/ClashOpen.png?raw=true)
+### Clash Android
+![Clash Android](screenshot/ClashAndroid.png?raw=true)
 
 ### v2ray
 ![v2ray Windows](screenshot/v2ray1.png?raw=true)
