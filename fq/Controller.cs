@@ -88,7 +88,7 @@ namespace fq
                                 {
                                     var it = new Proxies(ref cf_id, config);
                                     proxies.Add("  - " + it.ToString());
-                                    ids.Add("      - " + it.ID());
+                                    ids.Add("      - " + it.name);
                                 }
                             }
                             else if (agree == "trojan")
@@ -99,7 +99,7 @@ namespace fq
                                     var name = Uri.UnescapeDataString(arr[2]);
                                     var it = new Proxies(ref cf_id, agree, name, arr[1], arr[0]);
                                     proxies.Add("  - " + it.ToString());
-                                    ids.Add("      - " + it.ID());
+                                    ids.Add("      - " + it.name);
                                 }
                                 catch { }
                             }
@@ -111,7 +111,7 @@ namespace fq
                                 {
                                     var it = new Proxies(ref cf_id, agree, Uri.UnescapeDataString(arr[2]), arr[1], config_pass_str);
                                     proxies.Add("  - " + it.ToString());
-                                    ids.Add("      - " + it.ID());
+                                    ids.Add("      - " + it.name);
                                 }
                             }
                         }
@@ -134,19 +134,33 @@ namespace fq
             return null;
         }
 
-        public static string ClearID(string key)
+        public static string AutoID(string key)
         {
-            var _key = key.Replace("github.com/freefq - ", "").Trim();
+            var _key = ClearID(key);
+            var id = GetID(_key);
+            if (id == null) return _key;
+            if (_key.StartsWith(id)) return _key;
+            return id + " " + _key;
+        }
+        static string ClearID(string key)
+        {
+            var _key = key.Replace("github.com/freefq - ", "").Replace("+V2CROSS.COM", "").Replace("V2CROSS.COM", "").Trim();
+            var ids = new List<string>();
+            foreach (var item in _key.Split('@', ':', ',', '{', '}', '[', ']'))
+            {
+                if (!string.IsNullOrEmpty(item.Trim())) ids.Add(item.Trim());
+            }
+            _key = string.Join(" ", ids);
             if (_key.Contains(" "))
             {
                 var i = _key.LastIndexOf(" ");
                 if (_key.Substring(i).Trim().ToInt(-1) > -1)
-                    return _key.Substring(0, i).Trim();
+                    return _key.Substring(0, i).Trim().TrimEnd('-').Trim();
             }
             if (string.IsNullOrEmpty(_key)) return "未知";
             return _key;
         }
-        public static string? GetID(string key)
+        static string? GetID(string key)
         {
             //http://www.fhdq.net/emoji/14.html
             if (key.Contains("澳大利亚"))
@@ -217,8 +231,7 @@ namespace fq
             public Proxies(ref List<string> cf, Vmess data)
             {
                 type = "vmess";
-                name = ClearID(data.ps);
-                id = GetID(name);
+                name = AutoID(data.ps);
                 if (cf.Contains(name))
                 {
                     int num = 1;
@@ -247,8 +260,7 @@ namespace fq
             public Proxies(ref List<string> cf, string _type, string _name, string _server, string _password)
             {
                 type = _type;
-                name = ClearID(_name);
-                id = GetID(name);
+                name = AutoID(_name);
                 if (cf.Contains(name))
                 {
                     int num = 1;
@@ -269,8 +281,7 @@ namespace fq
             public Proxies(ref List<string> cf, string _type, string _name, string _server, string[] _password)
             {
                 type = _type;
-                name = ClearID(_name);
-                id = GetID(name);
+                name = AutoID(_name);
                 if (cf.Contains(name))
                 {
                     int num = 1;
@@ -289,7 +300,7 @@ namespace fq
                 cipher = _password[0];
                 password = _password[1];
             }
-            public string? id { get; set; }
+
             public string name { get; set; }
             public string server { get; set; }
             public int port { get; set; }
@@ -303,14 +314,10 @@ namespace fq
             public string? network { get; set; }
             public WsOpts? ws_opts { get; set; }
 
-            public string ID()
-            {
-                return id == null ? name : id + " " + name;
-            }
             public override string ToString()
             {
                 var arr = new List<string> {
-                    id==null?"name: "+name:"name: "+id+" "+name,
+                    "name: " + name,
                     "server: "+server,
                     "port: "+port,
                     "type: "+type,
