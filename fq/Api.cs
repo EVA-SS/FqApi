@@ -10,7 +10,8 @@
         public static void SetPath(string path)
         {
             path_clash = path + "clash.txt";
-            path_fq = path + "fq.txt";
+            path_fq = path + "fq\\";
+            if (!Directory.Exists(path_fq)) Directory.CreateDirectory(path_fq);
         }
 
         #endregion

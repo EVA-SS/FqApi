@@ -12,29 +12,30 @@ namespace fq
         [HttpGet]
         public string? fq()
         {
-            return Data();
-        }
-
-        static string? Data()
-        {
             //数据来源
             //https://github.com/freefq/free
-            if (System.IO.File.Exists(Api.path_fq))
+            return Data("freefq", "freefq/free/master/v2");
+        }
+
+        static string? Data(string key, string path)
+        {
+            string uri = "https://raw.fastgit.org/" + path;
+            if (System.IO.File.Exists(Api.path_fq + key))
             {
-                var t = System.IO.File.GetCreationTime(Api.path_fq);
+                var t = System.IO.File.GetCreationTime(Api.path_fq + key);
                 var elapsedTicks = DateTime.Now.Ticks - t.Ticks;
                 var elapsedSpan = new TimeSpan(elapsedTicks);
                 if (elapsedSpan.TotalHours > 12)
                 {
-                    var data = HttpLib.Http.Get("https://raw.kgithub.com/freefq/free/master/v2").request().Result.Data;
-                    if (data != null) { System.IO.File.WriteAllText(Api.path_fq, data); return data; }
+                    var data = HttpLib.Http.Get(uri).request().Result.Data;
+                    if (data != null) { System.IO.File.WriteAllText(Api.path_fq + key, data); return data; }
                 }
-                return System.IO.File.ReadAllText(Api.path_fq);
+                return System.IO.File.ReadAllText(Api.path_fq + key);
             }
             else
             {
-                var data = HttpLib.Http.Get("https://raw.kgithub.com/freefq/free/master/v2").request().Result.Data;
-                if (data != null) { System.IO.File.WriteAllText(Api.path_fq, data); return data; }
+                var data = HttpLib.Http.Get(uri).request().Result.Data;
+                if (data != null) { System.IO.File.WriteAllText(Api.path_fq + key, data); return data; }
             }
             return null;
         }
@@ -46,14 +47,33 @@ namespace fq
         [HttpGet]
         public object sub()
         {
-            var fq_data = Data();
-            if (fq_data != null)
+            var result = GetClash(Data("freefq", "freefq/free/master/v2"), Data("wrfree", "wrfree/free/main/v2"), Data("Pawdroid", "Pawdroid/Free-servers/main/sub"));
+            if (result == null)
+                return NotFound("下载资源失败");
+            return result;
+        }
+
+        static string? GetClash(params string?[] datas)
+        {
+            var line = new List<string>();
+            foreach (var fq_data in datas)
+            {
+                if (fq_data != null)
+                {
+                    var old = fq_data.DecryptBase64();
+                    foreach (var item in old.Split('\n'))
+                    {
+                        if (!line.Contains(item)) line.Add(item);
+                    }
+                }
+            }
+            if (line.Count > 0)
             {
                 var temp = System.IO.File.ReadAllLines(Api.path_clash).ToList();
-                var old = fq_data.DecryptBase64();
                 List<string> proxies = new List<string>(), ids = new List<string>();
                 var cf_id = new List<string>();
-                foreach (var item in old.Split('\n'))
+
+                foreach (var item in line)
                 {
                     if (!string.IsNullOrEmpty(item))
                     {
@@ -64,7 +84,7 @@ namespace fq
                             if (agree == "vmess")
                             {
                                 var config = config_str.ToJson<Vmess>();
-                                if (config != null && config.port != 0)
+                                if (config != null && config.port != 0 && config.id.Length > 9)
                                 {
                                     var it = new Proxies(ref cf_id, config);
                                     proxies.Add("  - " + it.ToString());
@@ -73,23 +93,31 @@ namespace fq
                             }
                             else if (agree == "trojan")
                             {
-                                var arr = config_str.Split('@', '#');
-                                var name = Uri.UnescapeDataString(arr[2]);
-                                var it = new Proxies(ref cf_id, agree, name, arr[1], arr[0]);
-                                proxies.Add("  - " + it.ToString());
-                                ids.Add("      - " + it.ID());
+                                try
+                                {
+                                    var arr = config_str.Split('@', '#');
+                                    var name = Uri.UnescapeDataString(arr[2]);
+                                    var it = new Proxies(ref cf_id, agree, name, arr[1], arr[0]);
+                                    proxies.Add("  - " + it.ToString());
+                                    ids.Add("      - " + it.ID());
+                                }
+                                catch { }
                             }
                             else if (agree == "ss")
                             {
                                 var arr = config_str.Split('@', '#');
-                                var config_pass_str = arr[0].DecryptBase64().Split(':');
-                                var it = new Proxies(ref cf_id, agree, Uri.UnescapeDataString(arr[2]), arr[1], config_pass_str[0], config_pass_str[1]);
-                                proxies.Add("  - " + it.ToString());
-                                ids.Add("      - " + it.ID());
+                                var config_pass_str = arr[0].Trim().DecryptBase64().Split(':');
+                                if (config_pass_str.Length > 1)
+                                {
+                                    var it = new Proxies(ref cf_id, agree, Uri.UnescapeDataString(arr[2]), arr[1], config_pass_str);
+                                    proxies.Add("  - " + it.ToString());
+                                    ids.Add("      - " + it.ID());
+                                }
                             }
                         }
                     }
                 }
+
                 int rindex = temp.IndexOf("{{proxies}}");
                 temp.RemoveAt(rindex);
                 temp.InsertRange(rindex, proxies);
@@ -103,7 +131,7 @@ namespace fq
                 }
                 return string.Join('\n', temp);
             }
-            else { return NotFound("下载资源失败"); }
+            return null;
         }
 
         public static string ClearID(string key)
@@ -115,12 +143,35 @@ namespace fq
                 if (_key.Substring(i).Trim().ToInt(-1) > -1)
                     return _key.Substring(0, i).Trim();
             }
+            if (string.IsNullOrEmpty(_key)) return "未知";
             return _key;
         }
         public static string? GetID(string key)
         {
             //http://www.fhdq.net/emoji/14.html
-            if (key.Contains("香港"))
+            if (key.Contains("澳大利亚"))
+                return "🇦🇺";
+            else if (key.Contains("爱沙尼亚"))
+                return "🇪🇪";
+            else if (key.Contains("新加坡"))
+                return "🇸🇬";
+            else if (key.Contains("摩尔多瓦"))
+                return "🇲🇩";
+            else if (key.Contains("俄罗斯"))
+                return "🇷🇺";
+            else if (key.Contains("加拿大"))
+                return "🇨🇦";
+            else if (key.Contains("意大利"))
+                return "🇮🇹";
+            else if (key.Contains("伯利兹"))
+                return "🇧🇿";
+            else if (key.Contains("爱尔兰"))
+                return "🇮🇪";
+            else if (key.Contains("立陶宛"))
+                return "🇱🇹";
+            else if (key.Contains("阿拉伯"))
+                return "🇸🇦";
+            else if (key.Contains("香港"))
                 return "🇭🇰";
             else if (key.Contains("澳门"))
                 return "🇲🇴";
@@ -132,30 +183,32 @@ namespace fq
                 return "🇫🇷";
             else if (key.Contains("美国"))
                 return "🇺🇸";
-            else if (key.Contains("俄罗斯"))
-                return "🇷🇺";
-            else if (key.Contains("澳大利亚"))
-                return "🇦🇺";
-            else if (key.Contains("加拿大"))
-                return "🇨🇦";
-            else if (key.Contains("中国"))
-                return "🇨🇳";
             else if (key.Contains("印度"))
                 return "🇮🇳";
             else if (key.Contains("日本"))
                 return "🇯🇵";
             else if (key.Contains("韩国"))
                 return "🇰🇷";
-            else if (key.Contains("新加坡"))
-                return "🇸🇬";
             else if (key.Contains("泰国"))
                 return "🇹🇭";
             else if (key.Contains("越南"))
                 return "🇻🇳";
             else if (key.Contains("欧盟"))
                 return "🇪🇺";
-            else if (key.Contains("摩尔多瓦"))
-                return "🇲🇩";
+            else if (key.Contains("丹麦"))
+                return "🇩🇰";
+            else if (key.Contains("德国"))
+                return "🇩🇪";
+            else if (key.Contains("瑞典"))
+                return "🇸🇪";
+            else if (key.Contains("芬兰"))
+                return "🇫🇮";
+            else if (key.Contains("希腊"))
+                return "🇬🇷";
+            else if (key.Contains("挪威"))
+                return "🇳🇴";
+            else if (key.Contains("中国") || ((key.Contains("省") || key.Contains("市")) && (key.Contains("移动") || key.Contains("联通") || key.Contains("电信") || key.Contains("广电"))))
+                return "🇨🇳";
             return null;
         }
 
@@ -213,7 +266,7 @@ namespace fq
                 port = ipport[1].ToInt();
                 password = _password;
             }
-            public Proxies(ref List<string> cf, string _type, string _name, string _server, string _cipher, string _password)
+            public Proxies(ref List<string> cf, string _type, string _name, string _server, string[] _password)
             {
                 type = _type;
                 name = ClearID(_name);
@@ -233,8 +286,8 @@ namespace fq
                 var ipport = _server.Split(':');
                 server = ipport[0];
                 port = ipport[1].ToInt();
-                cipher = _cipher;
-                password = _password;
+                cipher = _password[0];
+                password = _password[1];
             }
             public string? id { get; set; }
             public string name { get; set; }

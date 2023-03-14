@@ -61,6 +61,14 @@ namespace fq
             }
             catch
             {
+                try
+                {
+                    byte[] decbuff = Convert.FromBase64String(str + "=");
+                    return Encoding.UTF8.GetString(decbuff);
+                }
+                catch
+                {
+                }
                 return noNull ? str : null;
             }
         }
