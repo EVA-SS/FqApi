@@ -144,7 +144,7 @@ namespace fq
         }
         static string ClearID(string key)
         {
-            var _key = key.Replace("github.com/freefq - ", "").Replace("+V2CROSS.COM", "").Replace("V2CROSS.COM", "").Trim();
+            var _key = key.Replace("github.com/freefq - ", "").Replace("+V2CROSS.COM", "").Replace("V2CROSS.COM", "").Replace("|", "").Trim();
             var ids = new List<string>();
             foreach (var item in _key.Split('@', ':', ',', '{', '}', '[', ']'))
             {
@@ -165,6 +165,8 @@ namespace fq
             //http://www.fhdq.net/emoji/14.html
             if (key.Contains("澳大利亚"))
                 return "🇦🇺";
+            else if (key.Contains("马来西亚"))
+                return "🇲🇾";
             else if (key.Contains("爱沙尼亚"))
                 return "🇪🇪";
             else if (key.Contains("新加坡"))
@@ -221,6 +223,8 @@ namespace fq
                 return "🇬🇷";
             else if (key.Contains("挪威"))
                 return "🇳🇴";
+            else if (key.Contains("南非"))
+                return "🇿🇦";
             else if (key.Contains("中国") || ((key.Contains("省") || key.Contains("市")) && (key.Contains("移动") || key.Contains("联通") || key.Contains("电信") || key.Contains("广电"))))
                 return "🇨🇳";
             return null;
